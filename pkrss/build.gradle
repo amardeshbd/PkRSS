@@ -1,26 +1,35 @@
 apply plugin: 'com.android.library'
 
 android {
-  compileSdkVersion 22
-  buildToolsVersion "22.0.1"
+  compileSdkVersion rootProject.ext.targetSdkVersion
+  buildToolsVersion rootProject.ext.buildToolsVersion
 
   defaultConfig {
-    minSdkVersion 14
+    minSdkVersion rootProject.ext.minSdkVersion
+    targetSdkVersion rootProject.ext.targetSdkVersion
     versionCode Integer.parseInt(project.VERSION_CODE)
     versionName project.VERSION_NAME
   }
 }
 
+tasks.withType(Javadoc) {
+  // Fixes issue related to "Javadoc generation failed"
+  // See https://github.com/nostra13/Android-Universal-Image-Loader/issues/1086
+  options.addStringOption('Xdoclint:none', '-quiet')
+  options.addStringOption('encoding', 'UTF-8')
+  options.addStringOption('charSet', 'UTF-8')
+}
+
 dependencies {
   compile fileTree(dir: 'libs', include: ['*.jar'])
-  compile group: 'com.squareup.okhttp', name: 'okhttp', version: '2.5.0'
-  compile group: 'com.squareup.okhttp3', name: 'okhttp', version: '3.2.0'
-  compile group: 'com.squareup.okhttp', name: 'okhttp-urlconnection', version: '2.5.0'
+  compile group: 'com.squareup.okhttp', name: 'okhttp', version: rootProject.okHttpVersion
+  compile group: 'com.squareup.okhttp3', name: 'okhttp', version: rootProject.ext.okHttp3Version
+  compile group: 'com.squareup.okhttp', name: 'okhttp-urlconnection', version: rootProject.ext.okHttpVersion
 
-  androidTestCompile 'com.android.support.test:runner:0.4'
-  androidTestCompile 'com.android.support.test:rules:0.4'
-  androidTestCompile 'com.squareup.okhttp:okhttp:2.5.0'
-  androidTestCompile 'com.squareup.okhttp:okhttp-urlconnection:2.5.0'
+  androidTestCompile "com.android.support.test:runner:$rootProject.supportTestVersion"
+  androidTestCompile "com.android.support.test:rules:$rootProject.supportTestVersion"
+  androidTestCompile "com.squareup.okhttp:okhttp:$rootProject.okHttpVersion"
+  androidTestCompile "com.squareup.okhttp:okhttp-urlconnection:$rootProject.okHttpVersion"
 }
 
 task clearJar(type: Delete) {
