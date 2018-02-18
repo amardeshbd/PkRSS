@@ -1,21 +1,45 @@
-machine:
-    java:
-        version: oraclejdk8
-
-dependencies:
-    pre:
-        - echo y | android update sdk --no-ui --all --filter "tools"
-        - echo y | android update sdk --no-ui --all --filter "platform-tools"
-        - echo y | android update sdk --no-ui --all --filter "build-tools"
-        - echo y | android update sdk --no-ui --all --filter "build-tools-27.0.3"
-        - echo y | android update sdk --no-ui --all --filter "android-27"
-        - echo y | android update sdk --no-ui --all --filter "extra-android-support"
-        - echo y | android update sdk --no-ui --all --filter "extra-android-m2repository"
-    post: # Avoids invoking maven command (See https://circleci.com/docs/configuration/#dependencies)
-        - echo $HOME
-    override: # Avoids invoking maven command (See https://circleci.com/docs/configuration/#dependencies)
-        - echo $HOME
-
-test:
-    override:
-        - ./gradlew assembleDebug
+version: 2
+# Config using guides from https://circleci.com/docs/2.0/language-android/
+jobs:
+  build:
+    # In each job, we have the option of specifying a working_directory.
+    # This is the directory into which our code will be checked out,
+    # and this path will be used as the default working directory for
+    # the rest of the job unless otherwise specified.
+    working_directory: ~/code
+    docker:
+      # We use the CircleCI-provided Android image with the api-25-alpha tag.
+      # Our Android Docker images are currently tagged with the suffix -alpha.
+      # This is to indicate the images are currently under development and
+      # might change in backwards incompatible ways from week to week.
+      - image: circleci/android:api-27-alpha
+    environment:
+      JVM_OPTS: -Xmx3200m
+    steps:
+      - checkout
+      - restore_cache:
+          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "pkrss/build.gradle" }}
+#      - run:
+#         name: Chmod permissions #if permission for Gradlew Dependencies fail, use this. 
+#         command: sudo chmod +x ./gradlew
+      - run:
+          name: Download Dependencies
+          command: ./gradlew androidDependencies
+      - save_cache:
+          paths:
+            - ~/.gradle
+          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "pkrss/build.gradle" }}
+      - run:
+          name: Run Tests
+          command: ./gradlew assembleDebug
+      - run:
+          # runs the unit tests, and runs the built in linting tools to check your code for style issues.
+          name: Run Tests
+          command: ./gradlew test
+      - store_artifacts:
+          # We then upload the build reports as build artifacts,
+          # and we upload the test metadata (XML) for CircleCI to process.
+          path: pkrss/build/reports
+          destination: reports
+      - store_test_results:
+          path: pkrss/build/test-results
